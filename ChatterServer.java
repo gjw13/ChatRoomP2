@@ -30,8 +30,13 @@ public class ChatterServer {
 	public ChatterServer(String s) {
 		
 		try {
-			Integer portNum = Integer.parseInt(s); // Get the port number from command line 
-			sock = new ServerSocket(portNum);
+			boolean placeholder = true;
+			while (placeholder){
+				Integer portNum = Integer.parseInt(s); // Get the port number from command line 
+				sock = new ServerSocket(portNum);
+				// Pass the socket to the openListening function
+				openListening(sock);
+			}
 			
 			
 			
@@ -46,9 +51,7 @@ public class ChatterServer {
 	public void openListening( ServerSocket sock) {
 		try{
 			Socket client = sock.accept(); // Get a connection
-			InputStream in = client.getInputStream();
-	         BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
-	         String msg = bin.readLine();
+			// Pass the connection to the server listener class???
 		}
 		catch (Exception e){
 			System.err.println("ChatterServer: error = "+e);

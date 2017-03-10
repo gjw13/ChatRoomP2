@@ -25,8 +25,10 @@ public class ChatterClient {
 		
 		try {
 			nickname = "anon"; // Default nickname
+			boolean hasQuit = false;
 			//System.out.println("Entered Chatter Client with server " +sName + " and "
 			//		+ "port number " + pNum);
+			
 			
 			Socket socket = new Socket(sName, pNum);
 			// Setup to read and write to the console/terminal
@@ -35,24 +37,31 @@ public class ChatterClient {
 		    OutputStream out = socket.getOutputStream();
 		    BufferedWriter bout = new BufferedWriter( new OutputStreamWriter( out ) );
 		    
-		    // If the user types in /nick, activate the setNickname
-		    String input = bin.readLine();
-		    if (input.substring(0, 4).equals("/nick")){
-		    	setNickname(input.substring(6));
-		    	System.out.println(nickname);
-		    }
-		    // If the user types /dm, send a message to a specific client
-		    // Not sure how to do this...
-		    else if (input.substring(0, 2).equals("/dm")){
+		    System.out.println("Welcome to the ChatRoom! Server: " + sName 
+		    		+ " Port: " + pNum);
+		    
+		    // while loop while this user hasn't quit
+		    while (!hasQuit){
+		    
+		    	// If the user types in /nick, activate the setNickname
+		    	String input = bin.readLine();
+		    	if (input.substring(0, 4).equals("/nick")){
+		    		setNickname(input.substring(6));
+		    		System.out.println(nickname);
+		    	}
+		    	// If the user types /dm, send a message to a specific client
+		    	// Not sure how to do this...
+		    	else if (input.substring(0, 2).equals("/dm")){
 		    	
-		    }
-		    // If the user types /quit, stop this client
-		    else if (input.substring(0,4).equals("/quit")){
-		    	System.exit(0);
-		    }
-		    // Otherwise, this is just a normal line of chat
-		    else {
-		    	
+		    	}
+		    	// If the user types /quit, stop this client
+		    	else if (input.substring(0,4).equals("/quit")){
+		    		hasQuit = true;
+		    	}
+		    	// Otherwise, this is just a normal line of chat
+		    	else {
+		    		new ClientListens(socket);
+		    	}
 		    }
 			
 			
@@ -67,6 +76,23 @@ public class ChatterClient {
 	
 	// Class to echo what the server tells you to the screen
 	public class ClientListens{
+		
+		// Takes in a socket, creates a reader and outputs info to the screen
+		public ClientListens(Socket s){
+			try{
+				// Reader to output info to the screen
+				InputStream in = s.getInputStream();
+				BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
+				// read the line from the socket
+			    String line;
+			    line = bin.readLine();
+			    System.out.println(line);
+				
+			}
+			catch (Exception e){
+				System.err.println("ChatterClient: error = "+e);
+			}
+		}
 		
 	}
 	
