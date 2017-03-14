@@ -2,9 +2,9 @@ package ChatRoomP2.ChatRoomP2;
 
 import java.net.*;
 import java.io.*;
-import java.util.Vector;
+import java.util.LinkedList;
 
-public class ChatterServer {
+public class ChatterServer extends Thread{
 	// When someone calls in, need to make a separate thread to listen to that person
 	// Main thread should open phone line "answerThePhone()"
 	// Need a ServerListens runnable, wouldn't hurt to make it a class
@@ -14,11 +14,12 @@ public class ChatterServer {
 	// Has to get nicknames somehow
 	
 	ServerSocket sock; // Socket to listen to the client
-	Vector<ServerListener> clientList; // Vector of ServerListeners, one per client
+	LinkedList<ServerListener> clientList = new LinkedList<ServerListener>();
 	
 	public static void main( String[] args ) // Port number is inputed on command line
 	{
 		try{
+			
 			String portNumber = args[0];
 			new ChatterServer(portNumber);
 		}
@@ -34,12 +35,11 @@ public class ChatterServer {
 			while (placeholder){
 				Integer portNum = Integer.parseInt(s); // Get the port number from command line 
 				sock = new ServerSocket(portNum);
+				System.out.println("Chatter Server Open on Port #: " + portNum);
 				// Pass the socket to the openListening function
+				
 				openListening(sock);
 			}
-			
-			
-			
 			sock.close();
 		}
 		catch (Exception e){
@@ -47,11 +47,36 @@ public class ChatterServer {
 		}
 	}
 	
+	
+	
 	// Function which activates the server, and starts listening for the clients
-	public void openListening( ServerSocket sock) {
+	public synchronized void openListening( ServerSocket sock) {
 		try{
-			Socket client = sock.accept(); // Get a connection
-			// Pass the connection to the server listener class???
+			boolean serverOpen = true;
+			Socket client = sock.accept(); // Get a connection (blocks until client calls)
+			while (serverOpen){
+				//System.out.println("test");
+				
+				
+				// Pass the connection to the server listener class
+				ServerListener client1 = new ServerListener(client);
+				client1.start();
+				clientList.add(client1);
+				//System.out.println("test");
+				BufferedReader bin = new BufferedReader(new InputStreamReader(client.getInputStream()));
+		        PrintWriter pout = new PrintWriter( client.getOutputStream(), true);
+		        //System.out.println("test");
+		        BufferedWriter bout = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+		        
+		        String msg = bin.readLine();
+		        //while ((msg = bin.readLine()) != null){
+		        	//System.out.println(msg);
+		        
+		        //pout.println(msg);
+		        tellOthers(msg);
+		        //}
+			}
+			client.close();
 		}
 		catch (Exception e){
 			System.err.println("ChatterServer: error = "+e);
@@ -59,25 +84,36 @@ public class ChatterServer {
 	}
 	
 	// Function that sends input from one client to all others
-	public void tellOthers(String msg){
-		
+	
+	public synchronized void tellOthers(String msg){
+		for (ServerListener client : clientList) {
+			//System.out.println("test");
+			client.write(msg);
+		}
 	}
 	
 	
 	
+	
 	// Nickname should be instantiated here
-	public class ServerListener implements Runnable{
+	public class ServerListener extends Thread{
 		
 		protected String nickname; // Nickname, got from client class
+		protected Socket thisClient; // Socket for this client, used to write back
 		
 		public ServerListener(Socket s){
-			
+			thisClient = s;
 		}
 		
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			
+		// Write function to send message back to the client
+		public void write(String msg){
+			try{
+				PrintWriter pout = new PrintWriter( thisClient.getOutputStream(), true);
+				pout.println( msg );
+			}
+			catch (Exception e){
+				System.err.println("ChatterServer: error = "+e);
+			}
 		}
 		
 	} // END ServerListener class
