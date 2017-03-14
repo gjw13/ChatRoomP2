@@ -2,7 +2,7 @@ package ChatRoomP2.ChatRoomP2;
 
 import java.net.*;
 import java.io.*;
-import java.util.Scanner;
+import java.util.StringTokenizer;
 
 public class ChatterClient {
 	// Client has to listen to stuff coming from the keyboard, getUserInput()
@@ -47,6 +47,7 @@ public class ChatterClient {
 		    	//System.out.println("Test2");
 		    	// If the user types in /nick, activate the setNickname
 		    	
+		    	
 		    	synchronized(this){
 		    		String input = stdIn.readLine();
 		    	
@@ -55,37 +56,48 @@ public class ChatterClient {
 		    	
 		        //System.out.println("echo: " + bin.readLine());
 		        
-		    		Runnable runMe = new ClientListens(socket);
-		    		Thread thisThread = new Thread(runMe);
-		    		thisThread.start();
-		    	}
-		        
-		        /*
-		    	if (input.substring(0, 4).equals("/nick")){
-		    		setNickname(input.substring(6));
-		    		pout.write(nickname);
-		    	}
-		    	// If the user types /dm, send a message to a specific client
-		    	// Not sure how to do this...
-		    	// Input in form of /dm UserNickName Hello!
-		    	else if (input.substring(0, 2).equals("/dm")){
+		    		//Runnable runMe = new ClientListens(socket);
+		    		//Thread thisThread = new Thread(runMe);
+		    		//thisThread.start();
 		    	
-		    	}
-		    	// If the user types /quit, stop this client
-		    	else if (input.substring(0,4).equals("/quit")){
-		    		hasQuit = true;
-		    	}
-		    	// Otherwise, this is just a normal line of chat being entered
-		    	else {
-		    		try{
+		    		StringTokenizer token = new StringTokenizer(input);
+		    		String argument = token.nextToken();
+		        
+		    		if (argument.equals("/nick")){
+		    			//System.out.println("Inside nickname");
+		    			String name = token.nextToken();
+		    			setNickname(name);
+		    			//System.out.println(nickname);
+		    		}
+		    		// If the user types /dm, send a message to a specific client
+		    		// Not sure how to do this...
+		    		// Input in form of /dm UserNickName Hello!
+		    		else if (argument.equals("/dm")){
+		    	
+		    		}
+		    		// If the user types /quit, stop this client
+		    		else if (argument.equals("/quit")){
+		    			hasQuit = true;
+		    		}
+		    		else if (argument.equals(null)){
+		    			// Do nothing
+		    		}
+		    		// Otherwise, this is just a normal line of chat being entered
+		    		else {
+		    			try{
 		    			// Output the line of chat through the socket to the server
-						pout.write( input );
-					}
-					catch (Exception e){
-						System.err.println("ChatterClient: error = "+e);
-					}
+				    		//System.out.println("TESTING");
+				    		Runnable runMe = new ClientListens(socket);
+				    		Thread thisThread = new Thread(runMe);
+				    		thisThread.start();
+						}
+						catch (Exception e){
+							System.err.println("ChatterClient: error = "+e);
+						}
+		    		}
+		    		
 		    	}
-		    	*/
+		    	
 		    }
 		    pout.close();
 			socket.close();
@@ -98,7 +110,7 @@ public class ChatterClient {
 	
 	
 	// Class to echo what the server tells you to the screen
-	public class ClientListens implements Runnable{
+	public class ClientListens extends Thread{
 		
 		protected Socket sock;
 		
@@ -106,7 +118,7 @@ public class ChatterClient {
 		public ClientListens(Socket s){
 			sock = s;
 		}
-
+		
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub

@@ -53,30 +53,24 @@ public class ChatterServer extends Thread{
 	public synchronized void openListening( ServerSocket sock) {
 		try{
 			boolean serverOpen = true;
-			Socket client = sock.accept(); // Get a connection (blocks until client calls)
+			
 			while (serverOpen){
 				//System.out.println("test");
-				
+				Socket client = sock.accept(); // Get a connection (blocks until client calls)
 				
 				// Pass the connection to the server listener class
 				ServerListener client1 = new ServerListener(client);
-				client1.start();
 				clientList.add(client1);
+				client1.start();
 				//System.out.println("test");
-				BufferedReader bin = new BufferedReader(new InputStreamReader(client.getInputStream()));
-		        PrintWriter pout = new PrintWriter( client.getOutputStream(), true);
+				//BufferedReader bin = new BufferedReader(new InputStreamReader(client.getInputStream()));
+		        //PrintWriter pout = new PrintWriter( client.getOutputStream(), true);
 		        //System.out.println("test");
-		        BufferedWriter bout = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+		        //BufferedWriter bout = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
 		        
-		        String msg = bin.readLine();
-		        //while ((msg = bin.readLine()) != null){
-		        	//System.out.println(msg);
 		        
-		        //pout.println(msg);
-		        tellOthers(msg);
-		        //}
 			}
-			client.close();
+			//client.close();
 		}
 		catch (Exception e){
 			System.err.println("ChatterServer: error = "+e);
@@ -85,10 +79,12 @@ public class ChatterServer extends Thread{
 	
 	// Function that sends input from one client to all others
 	
-	public synchronized void tellOthers(String msg){
+	public void tellOthers(String msg, ServerListener skipMe){
+		//System.out.println("testOthers");
 		for (ServerListener client : clientList) {
-			//System.out.println("test");
-			client.write(msg);
+			if (client != skipMe){
+				client.write(msg);
+			}
 		}
 	}
 	
@@ -110,6 +106,26 @@ public class ChatterServer extends Thread{
 			try{
 				PrintWriter pout = new PrintWriter( thisClient.getOutputStream(), true);
 				pout.println( msg );
+			}
+			catch (Exception e){
+				System.err.println("ChatterServer: error = "+e);
+			}
+		}
+		
+		
+		@Override
+		public void run() {
+			try{
+				//System.out.println("testing");
+				BufferedReader bin = new BufferedReader(new InputStreamReader(thisClient.getInputStream()));
+				PrintWriter pout = new PrintWriter( thisClient.getOutputStream(), true);
+				String msg;
+		        while ((msg = bin.readLine()) != null){
+		        	//System.out.println(msg);
+		        	//System.out.println("testing");
+		        	//pout.println(msg);
+		        	tellOthers(msg, this);
+		        }
 			}
 			catch (Exception e){
 				System.err.println("ChatterServer: error = "+e);
