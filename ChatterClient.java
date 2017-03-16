@@ -4,6 +4,21 @@ import java.net.*;
 import java.io.*;
 import java.util.StringTokenizer;
 
+/*
+ * IMPORTANT NOTES/RULES ON THIS CHATROOM:
+ * 
+ * This chatroom was tested almost exclusively on localhost. That being said, it should also
+ * work on a server, just be careful to follow the format for the commands outlined in 
+ * the project specification. Always start the server before each of the clients. Messages
+ * typed on one client will NOT echo back to the same client. /quit will quit the client
+ * side, but NOT the server side, which must be killed manually.
+ * 
+ * 
+ */
+
+
+
+
 public class ChatterClient {
 	// Client has to listen to stuff coming from the keyboard, getUserInput()
 	
@@ -38,17 +53,23 @@ public class ChatterClient {
 		    BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
 		    BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 		    PrintWriter pout = new PrintWriter( socket.getOutputStream(), true);
+		    OutputStream out = socket.getOutputStream();
+		    BufferedWriter bout = new BufferedWriter( new OutputStreamWriter( out ) );
 		    //new ClientListens(socket);
 		    //System.out.println("Test");
 		    
 		    
 		    // while loop while this user hasn't quit
 		    while (!hasQuit){
-		    	//System.out.println("Test2");
-		    	// If the user types in /nick, activate the setNickname
+		    	
 		    	
 		    	
 		    	synchronized(this){
+		    		
+		    		Runnable runMe = new ClientListens(socket);
+		    		Thread thisThread = new Thread(runMe);
+		    		thisThread.start();
+		    		
 		    		String input = stdIn.readLine();
 		    	
 		    		pout.println(input);
@@ -64,32 +85,32 @@ public class ChatterClient {
 		    		String argument = token.nextToken();
 		        
 		    		if (argument.equals("/nick")){
-		    			//System.out.println("Inside nickname");
+
 		    			String name = token.nextToken();
 		    			setNickname(name);
-		    			//System.out.println(nickname);
+		    			bout.write("/" +name);
+
 		    		}
 		    		// If the user types /dm, send a message to a specific client
-		    		// Not sure how to do this...
 		    		// Input in form of /dm UserNickName Hello!
 		    		else if (argument.equals("/dm")){
-		    	
+		    			String name = token.nextToken();
+		    			String msg = token.nextToken();
+		    			
+		    			
 		    		}
 		    		// If the user types /quit, stop this client
 		    		else if (argument.equals("/quit")){
 		    			hasQuit = true;
-		    		}
-		    		else if (argument.equals(null)){
-		    			// Do nothing
 		    		}
 		    		// Otherwise, this is just a normal line of chat being entered
 		    		else {
 		    			try{
 		    			// Output the line of chat through the socket to the server
 				    		//System.out.println("TESTING");
-				    		Runnable runMe = new ClientListens(socket);
-				    		Thread thisThread = new Thread(runMe);
-				    		thisThread.start();
+				    		//Runnable runMe = new ClientListens(socket);
+				    		//Thread thisThread = new Thread(runMe);
+				    		//thisThread.start();
 						}
 						catch (Exception e){
 							System.err.println("ChatterClient: error = "+e);
@@ -122,18 +143,21 @@ public class ChatterClient {
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
-			try{
-				// Reader to output info to the screen
-				InputStream in = sock.getInputStream();
-				BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
-				// read the line from the socket and print it to the screen
-			    String line;
-			    line = bin.readLine();
-			    System.out.println(line);
-				
-			}
-			catch (Exception e){
-				System.err.println("ChatterClient: error = "+e);
+			boolean test = true;
+			while(test){
+				try{
+					// Reader to output info to the screen
+					InputStream in = sock.getInputStream();
+					BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
+					// read the line from the socket and print it to the screen
+				    String line;
+				    line = bin.readLine();
+				    System.out.println(line);
+					
+				}
+				catch (Exception e){
+					System.err.println("ChatterClient: error = "+e);
+				}
 			}
 		}
 		
@@ -144,4 +168,5 @@ public class ChatterClient {
 	public void setNickname(String n){
 		nickname = n;
 	}
+	
 }
