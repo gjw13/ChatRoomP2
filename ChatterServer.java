@@ -5,21 +5,17 @@ import java.io.*;
 import java.util.LinkedList;
 import java.util.StringTokenizer;
 
-//import ChatRoomP2.ChatRoomP2.ChatterClient.ClientListens;
 
+// ChatterServer Class: Instantiates a server thread and handles client input
 public class ChatterServer extends Thread{
-	// When someone calls in, need to make a separate thread to listen to that person
-	// Main thread should open phone line "answerThePhone()"
-	// Need a ServerListens runnable, wouldn't hurt to make it a class
-	// Need a tellOthers() function, that puts information from one to the rest
-		// tellOthers() is called by the ServerListeners, this is synchronized
-	// Need a private list of all ServerListener instances
-	// Has to get nicknames somehow
 	
-	ServerSocket sock; // Socket to listen to the client
+	// Socket to listen to the client
+	ServerSocket sock; 
+	// Linked List of ServerListeners, one per client
 	LinkedList<ServerListener> clientList = new LinkedList<ServerListener>();
 	
-	public static void main( String[] args ) // Port number is inputed on command line
+	// Main: gets the port number and starts the server
+	public static void main( String[] args ) 
 	{
 		try{
 			
@@ -31,7 +27,10 @@ public class ChatterServer extends Thread{
 			System.err.println("ChatterServer: error = "+e);
 		}
 	}
-	// Where all the magic happens
+	
+	
+	// ChatterServer Constructor: Opens the server with a server socket and passes to 
+	// openListening
 	public ChatterServer(String s) {
 		
 		try {
@@ -40,8 +39,8 @@ public class ChatterServer extends Thread{
 				Integer portNum = Integer.parseInt(s); // Get the port number from command line 
 				sock = new ServerSocket(portNum);
 				System.out.println("Chatter Server Open on Port #: " + portNum);
-				// Pass the socket to the openListening function
 				
+				// Pass the socket to the openListening function
 				openListening(sock);
 			}
 		}
@@ -52,16 +51,18 @@ public class ChatterServer extends Thread{
 	
 	
 	
-	// Function which activates the server, and starts listening for the clients
+	// openListening: Accepts the ServerSocket, and opens a client socket and instantiates
+	// a ServerListener for each client that calls in.
 	public void openListening( ServerSocket sock) {
 		try{
 			boolean serverOpen = true;
 			
-
 			while (serverOpen){
-				//System.out.println("test");
-				Socket client = sock.accept(); // Get a connection (blocks until client calls)
 				
+				// Get a connection (blocks until client calls)
+				Socket client = sock.accept(); 
+				
+				// Start a new thread for this client
 				Thread thread = new Thread(new ServerListener(client));
 				thread.start();
 				
@@ -69,15 +70,7 @@ public class ChatterServer extends Thread{
 				ServerListener client1 = new ServerListener(client);
 				clientList.add(client1);
 				client1.start();
-				//System.out.println("test");
-				//BufferedReader bin = new BufferedReader(new InputStreamReader(client.getInputStream()));
-		        //PrintWriter pout = new PrintWriter( client.getOutputStream(), true);
-		        //System.out.println("test");
-		        //BufferedWriter bout = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-		        
-		        
 			}
-			//client.close();
 		}
 		catch (Exception e){
 			System.err.println("ChatterServer: error = "+e);
@@ -85,14 +78,17 @@ public class ChatterServer extends Thread{
 	} // END openListening
 	
 	
-	// Function that sends input from one client to all others
+	// tellOthers: Function to tell all the ServerListeners what one of them says,
+	// this does echo back what each client says to itself
 	public synchronized void tellOthers(String msg, ServerListener skipMe){
 		
+		// For each loop to traverse the linked list
 		for (ServerListener client : clientList) {
 			
+			// Send the message to the ServerListener write function
 			client.write(msg);
-			System.out.println(client);
 			
+			// Sleep for aesthetic purposes
 			try{
 				Thread.sleep(500);
 			}
@@ -106,15 +102,16 @@ public class ChatterServer extends Thread{
 	
 	
 	
-	// Nickname should be instantiated here
+	// ServerListener Class: There is one ServerListener for each client that calls
 	public class ServerListener extends Thread{
 		
-		protected String nickname;
+		protected String nickname; // Nickname of the client
 		protected Socket thisClient; // Socket for this client, used to write back
+		protected int localID; // Local ID: unique for each thread
 		
 		public ServerListener(Socket s){
 			thisClient = s;
-			nickname = "anon";
+			localID = 0;
 		}
 		
 		// Write function to send message back to the client
@@ -127,30 +124,35 @@ public class ChatterServer extends Thread{
 			catch (Exception e){
 				System.err.println("ChatterServer: error = "+e);
 			}
-		}
+		} // END write function
 		
-		
+		// Run function: Accepts input from the client, determines if it's a command 
+		// or a normal line of chat, and performs the appropriate action
 		@Override
 		public void run() {
 			try{
 				
+				// Set the value of nickname: default is anon
+				nickname = "anon";
 				
+				// Get a buffered reader to get input from the client
 				BufferedReader bin = new BufferedReader(new InputStreamReader(thisClient.getInputStream()));
 				
 				String msg;
 		        while ((msg = bin.readLine()) != null){
-
+		        	
+		        	// Split the message up to test if it's a command
 		        	StringTokenizer token = new StringTokenizer(msg);
 		        	String testIfCommand = token.nextToken();
 		        	
-		        	
+		        	// See if this is a nickname command
 		        	if (testIfCommand.equals("/nick")){
 		        		nickname = token.nextToken();
 		        		tellOthers(nickname + " has entered the chatroom", this);
 		        		
 		        		
 		        	}
-		        	
+		        	// See if this is a direct message command
 		        	else if (testIfCommand.equals("/dm")){
 		        		
 		        		String otherPerson = token.nextToken();
@@ -165,25 +167,9 @@ public class ChatterServer extends Thread{
 		    				}
 		    			}
 		        	}
-		        	
+		        	// Send the basic message to all others
 		        	else{
-		        		//tellOthers(msg, this);
-		        		
-		        		synchronized(this){
-			        		for (ServerListener client : clientList) {
-			        			
-			        			client.write(msg);
-			        			//System.out.println(nickname);
-			        			
-			        			try{
-			        				Thread.sleep(500);
-			        			}
-			        			catch (Exception e){
-			        				System.err.println("ChatterServer: error = "+e);
-			        			}
-			        				
-			        		}
-			        	}
+		        		tellOthers(msg, this);
 		        	}
 		        	
 		        }
@@ -194,7 +180,7 @@ public class ChatterServer extends Thread{
 				System.err.println("ChatterServer: error = "+e);
 			}
 			
-		}
+		} // END run function
 		
 	} // END ServerListener class
 } // END ChatterServer class

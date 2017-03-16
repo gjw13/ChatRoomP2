@@ -10,20 +10,19 @@ import java.util.StringTokenizer;
  * This chatroom was tested almost exclusively on localhost. That being said, it should also
  * work on a server, just be careful to follow the format for the commands outlined in 
  * the project specification. Always start the server before each of the clients. Messages
- * typed on one client will NOT echo back to the same client. /quit will quit the client
+ * typed on one client will echo back to the same client. /quit will quit the client
  * side, but NOT the server side, which must be killed manually.
- * 
- * 
  */
 
 
 
-
+// ChatterClient Class: Accepts keyboard input and sends it to the server
 public class ChatterClient {
-	// Client has to listen to stuff coming from the keyboard, getUserInput()
 	
 	protected String nickname; // Name of the client
 	
+	// Main Function: Gets the server name and port number from the command line
+	// and passes it to the constructor
 	public static void main(String[] args){
 		try{
 			String serverName = args[0];
@@ -35,8 +34,11 @@ public class ChatterClient {
 			System.err.println("ChatterClient: error = "+e);
 		}
 		System.exit(0);
-	}
-	// Fun stuff here
+	}// END main
+	
+	
+	// ChatterClient Constructor: Does the heavy lifting of accepting user input,
+	// and sending it to the server
 	public ChatterClient(String sName, int pNum) {
 		
 		try {
@@ -46,8 +48,9 @@ public class ChatterClient {
 			System.out.println("Welcome to the ChatRoom! Server: " + sName 
 		    		+ " Port: " + pNum);
 			
-			
+			// Get the socket info
 			Socket socket = new Socket(sName, pNum);
+			
 			// Setup to read and write to the console/terminal
 			InputStream in = socket.getInputStream();
 		    BufferedReader bin = new BufferedReader( new InputStreamReader(in) );
@@ -55,35 +58,32 @@ public class ChatterClient {
 		    PrintWriter pout = new PrintWriter( socket.getOutputStream(), true);
 		    OutputStream out = socket.getOutputStream();
 		    BufferedWriter bout = new BufferedWriter( new OutputStreamWriter( out ) );
-		    //new ClientListens(socket);
-		    //System.out.println("Test");
 		    
 		    
 		    // while loop while this user hasn't quit
 		    while (!hasQuit){
 		    	
-		    	
-		    	
+		    	// Synchronization of Threads to prevent mistimed messages
 		    	synchronized(this){
 		    		
+		    		// Start a ClientListens thread
 		    		Runnable runMe = new ClientListens(socket);
 		    		Thread thisThread = new Thread(runMe);
 		    		thisThread.start();
 		    		
+		    		// Get input from the line
 		    		String input = stdIn.readLine();
-		    	
+		    		
+		    		// Send input to the server
 		    		pout.println(input);
 		    		pout.flush();
 		    	
-		        //System.out.println("echo: " + bin.readLine());
-		        
-		    		//Runnable runMe = new ClientListens(socket);
-		    		//Thread thisThread = new Thread(runMe);
-		    		//thisThread.start();
-		    	
+		    		// Split up the input into tokens to handle commands
 		    		StringTokenizer token = new StringTokenizer(input);
 		    		String argument = token.nextToken();
 		        
+		    		// If the user types /nick, they are setting their nickname
+		    		// Send this information to the server
 		    		if (argument.equals("/nick")){
 
 		    			String name = token.nextToken();
@@ -94,8 +94,6 @@ public class ChatterClient {
 		    		// If the user types /dm, send a message to a specific client
 		    		// Input in form of /dm UserNickName Hello!
 		    		else if (argument.equals("/dm")){
-		    			String name = token.nextToken();
-		    			String msg = token.nextToken();
 		    			
 		    			
 		    		}
@@ -103,14 +101,11 @@ public class ChatterClient {
 		    		else if (argument.equals("/quit")){
 		    			hasQuit = true;
 		    		}
-		    		// Otherwise, this is just a normal line of chat being entered
+		    		// Otherwise, this is just a normal line of chat being entered, 
+		    		// which is handled up above
 		    		else {
 		    			try{
-		    			// Output the line of chat through the socket to the server
-				    		//System.out.println("TESTING");
-				    		//Runnable runMe = new ClientListens(socket);
-				    		//Thread thisThread = new Thread(runMe);
-				    		//thisThread.start();
+		    				// Do nothing
 						}
 						catch (Exception e){
 							System.err.println("ChatterClient: error = "+e);
@@ -127,10 +122,11 @@ public class ChatterClient {
 			System.err.println("ChatterClient: error = "+e);
 		}
 		
-	}
+	} // END ChatterClient Constructor
 	
 	
-	// Class to echo what the server tells you to the screen
+	// ClientListens Class: Gets output from the server from other clients and 
+	// sends it out to the window
 	public class ClientListens extends Thread{
 		
 		protected Socket sock;
@@ -140,11 +136,13 @@ public class ChatterClient {
 			sock = s;
 		}
 		
+		// Run function: Handles the output to the screen
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
 			boolean test = true;
+			
 			while(test){
+				
 				try{
 					// Reader to output info to the screen
 					InputStream in = sock.getInputStream();
